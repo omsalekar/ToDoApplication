@@ -1,0 +1,179 @@
+﻿@page "/todo"
+@inject IHttpClientFactory ClientFactory
+@using ToDoBlazorApp.Components.Model
+@rendermode InteractiveServer
+
+
+<h3>ToDoComponent</h3>
+
+<button class="btn btn-primary mb-3" @onclick="ShowAddTaskForm">Add Task</button>
+
+@if (showAddTaskForm)
+{
+    <div>
+        <h4>Add Task</h4>
+
+        @* <input class="form-control mb-2" @bind="toDoModel.Id" placeholder="Id" /> *@
+
+        <input class="form-control mb-2" @bind="toDoModel.Task" placeholder="Add Task"   />
+
+        @* <input class="form-control mb-2" @bind="toDoModel.IsCompleted" placeholder="Is Complete" /> *@
+
+        <button class="btn btn-success" @onclick="AddToDoItem">Save</button>
+        <button class="btn btn-secondary" @onclick="CancelAddTaskForm" >Cancel</button>
+    </div>
+}
+@if (isEditing)
+{
+    <div>
+        <h4>Update Task</h4>
+
+        @* <input class="form-control mb-2" @bind="toDoModel.Id" placeholder="Id" /> *@
+
+        <input class="form-control mb-2" @bind="toDoModelEdit.Task" placeholder="Add Task" />
+
+        @* <input class="form-control mb-2" @bind="toDoModel.IsCompleted" placeholder="Is Complete" /> *@
+
+        <button class="btn btn-success" @onclick="UpdateToDoItem">Save</button>
+        <button class="btn btn-secondary" @onclick="CancelEditForm">Cancel</button>
+    </div>
+}
+
+
+@if (toDoItems == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Title</th>
+                <th>Completed</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in toDoItems)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Task</td>
+                     <td>
+                    <input type="checkbox"
+                           class="form-check-input me-2"
+                           checked="@item.IsCompleted"
+                               @onclick="() => ToggleCompletion(item)" />
+
+
+                    </td>
+
+
+                    <td>
+                        <button class="btn btn-danger" @onclick="() => DeleteToDoItem(item.Id)">Delete</button>
+                        <button class="btn btn-primary" @onclick="() => LoadEditForm(item)">Edit</button>
+
+                    </td>
+            
+                      
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<ToDoModel> toDoItems;
+    ToDoModel toDoModel = new();
+    ToDoModel toDoModelEdit = new();
+    bool showAddTaskForm = false;
+    bool isEditing = false;
+
+    HttpClient http => ClientFactory.CreateClient("api"); 
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        toDoItems = await http.GetFromJsonAsync<List<ToDoModel>>("api/ToDo/GetAllTasks");
+
+
+    }
+
+    private async Task LoadToDoItems()
+    {
+        toDoItems = await http.GetFromJsonAsync<List<ToDoModel>>("api/ToDo/GetAllTasks");
+    }
+
+    private async Task AddToDoItem()
+    {
+        var response = await http.PostAsJsonAsync("api/ToDo/AddTask", toDoModel);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadToDoItems();
+            toDoModel = new ToDoModel();
+
+            showAddTaskForm = false;
+        }
+
+    }
+
+    public void ShowAddTaskForm()
+    {
+        showAddTaskForm = true;
+    }
+    public void CancelAddTaskForm()
+    {
+        showAddTaskForm = false;
+    }
+
+    private async Task ToggleCompletion(ToDoModel item)
+    {
+        item.IsCompleted = !item.IsCompleted;
+        var response = await http.PutAsJsonAsync("api/ToDo/UpdateTask", item);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadToDoItems();
+        }
+    }
+
+    private async Task DeleteToDoItem(int id)
+    {
+        var response = await http.DeleteAsync($"api/ToDo/DeleteTask?id={id}");
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadToDoItems();
+        }
+    }
+    public void ShowEditForm()
+    {
+        isEditing = true;
+    }
+    public void CancelEditForm()
+    {
+        isEditing = false;
+    }
+    public void LoadEditForm(ToDoModel item)
+    {
+        toDoModelEdit = new ToDoModel
+        {
+            Id = item.Id,
+            Task = item.Task,
+            IsCompleted = item.IsCompleted
+        };
+        isEditing = true;
+             
+    }
+    public async Task UpdateToDoItem()
+    {
+        var response = await http.PutAsJsonAsync("api/ToDo/UpdateTask", toDoModelEdit);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadToDoItems();
+            toDoModel = new ToDoModel();
+            isEditing = false;
+        }
+    }
+}
+
