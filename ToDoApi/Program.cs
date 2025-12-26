@@ -7,8 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 // --------------------
 
+// PostgreSQL for Render
 builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseSqlServer(
+    options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
@@ -17,7 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS (required for Vercel → Render)
+// CORS (Vercel → Render)
 builder.Services.AddCors();
 
 var app = builder.Build();
@@ -32,21 +33,18 @@ app.Urls.Add($"http://*:{port}");
 // Middleware
 // --------------------
 
-// Enable Swagger in ALL environments (important for Render)
+// Swagger in production (OK for demo/interview)
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// CORS must be BEFORE MapControllers
+// CORS
 app.UseCors(policy =>
     policy.AllowAnyOrigin()
           .AllowAnyMethod()
           .AllowAnyHeader());
 
-// HTTPS redirection (safe on Render)
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
