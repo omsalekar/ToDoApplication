@@ -1,7 +1,9 @@
-name: Full Stack CI
+name: Full Stack CI with SonarQube
 
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -9,27 +11,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   
+ 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-
+ 
+    - name: Install SonarScanner
+      run: dotnet tool install --global dotnet-sonarscanner
+ 
     - name: Restore API
       run: dotnet restore ToDoApi/ToDoApi.csproj
 
     - name: Restore Blazor
       run: dotnet restore ToDoBlazorApp/ToDoBlazorApp.csproj
-
+ 
+    - name: SonarQube Begin
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet sonarscanner begin \
+        /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
+        /o:"${{ secrets.SONAR_ORGANIZATION }}" \
+        /d:sonar.host.url="https://sonarcloud.io" \
+        /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+ 
     - name: Build API
       run: dotnet build ToDoApi/ToDoApi.csproj -c Release --no-restore
 
     - name: Build Blazor
       run: dotnet build ToDoBlazorApp/ToDoBlazorApp.csproj -c Release --no-restore
-
-    - name: Publish API
-      run: dotnet publish ToDoApi/ToDoApi.csproj -c Release -o publish-api
-
-    - name: Publish Blazor
-      run: dotnet publish ToDoBlazorApp/ToDoBlazorApp.csproj -c Release -o publish-blazor
+ 
+    - name: SonarQube End
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: dotnet sonarscanner en
