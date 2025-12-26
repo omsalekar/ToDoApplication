@@ -20,16 +20,16 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore ToDoApp/ToDoApp.csproj
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build ToDoApp/ToDoApp.csproj --configuration Release --no-restore
 
     - name: Test
       run: dotnet test --no-build --verbosity normal
 
     - name: Publish
-      run: dotnet publish -c Release -o publish
+      run: dotnet publish ToDoApp/ToDoApp.csproj -c Release -o publish
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
