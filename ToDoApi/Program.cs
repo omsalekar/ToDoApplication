@@ -3,6 +3,7 @@ using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Get connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -10,6 +11,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new Exception("Database connection string is missing");
 }
 
+// DbContext
 builder.Services.AddDbContext<ToDoDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -20,11 +22,17 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
-// Render PORT binding
+// 🔥 APPLY MIGRATIONS (THIS CREATES TABLES)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
+    db.Database.Migrate();
+}
+
+// Render port binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Urls.Add($"http://*:{port}");
 
-// Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
 
