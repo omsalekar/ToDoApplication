@@ -1,35 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 Read DATABASE_URL from Render
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-if (string.IsNullOrWhiteSpace(databaseUrl))
+if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new Exception("DATABASE_URL environment variable is missing");
+    throw new Exception("Database connection string is missing");
 }
 
-// 🔹 Convert DATABASE_URL → Npgsql connection string
-var databaseUri = new Uri(databaseUrl);
-var userInfo = databaseUri.UserInfo.Split(':');
-
-var connectionStringBuilder = new NpgsqlConnectionStringBuilder
-{
-    Host = databaseUri.Host,
-    Port = databaseUri.Port,
-    Username = userInfo[0],
-    Password = userInfo[1],
-    Database = databaseUri.AbsolutePath.TrimStart('/'),
-    SslMode = SslMode.Require,
-    TrustServerCertificate = true
-};
-
-var connectionString = connectionStringBuilder.ConnectionString;
-
-// 🔹 DbContext
 builder.Services.AddDbContext<ToDoDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -40,17 +20,11 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
-// 🔥 APPLY MIGRATIONS (CREATES TABLES AUTOMATICALLY)
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
-    db.Database.Migrate();
-}
-
-// 🔹 Render Port Binding
+// Render PORT binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Urls.Add($"http://*:{port}");
 
+// Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
 
