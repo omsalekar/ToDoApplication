@@ -1,4 +1,4 @@
- 
+using Microsoft.EntityFrameworkCore;
 using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +22,15 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
- 
+// --------------------
+// Render PORT binding
+// --------------------
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://*:{port}");
+
+// --------------------
+// Middleware
+// --------------------
 
 // Enable Swagger in ALL environments (important for Render)
 app.UseSwagger();
