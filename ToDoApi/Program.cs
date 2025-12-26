@@ -3,11 +3,9 @@ using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
- 
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-if (string.IsNullOrEmpty(connectionString))
+if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new Exception("Database connection string is missing");
 }
@@ -22,26 +20,18 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
- 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
-    db.Database.Migrate();
-}
-
- 
+// Render PORT binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Urls.Add($"http://*:{port}");
 
- 
-
+// Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors(policy =>
-    policy.AllowAnyOrigin()
-          .AllowAnyMethod()
-          .AllowAnyHeader());
+app.UseCors(p =>
+    p.AllowAnyOrigin()
+     .AllowAnyMethod()
+     .AllowAnyHeader());
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
