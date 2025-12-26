@@ -25,12 +25,12 @@ builder.Services.AddCors();
 var app = builder.Build();
 
 // --------------------
-// Ensure DB exists (SAFE FOR FIRST DEPLOY)
+// Apply migrations (PRODUCTION SAFE)
 // --------------------
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // --------------------
