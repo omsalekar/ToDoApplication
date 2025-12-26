@@ -3,9 +3,7 @@ using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --------------------
-// Services
-// --------------------
+ 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -24,24 +22,18 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
-// --------------------
-// Apply migrations (PRODUCTION SAFE)
-// --------------------
+ 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
     db.Database.Migrate();
 }
 
-// --------------------
-// Render PORT binding
-// --------------------
+ 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Urls.Add($"http://*:{port}");
 
-// --------------------
-// Middleware
-// --------------------
+ 
 
 app.UseSwagger();
 app.UseSwaggerUI();
