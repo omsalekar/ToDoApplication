@@ -14,22 +14,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0   
- 
+        fetch-depth: 0
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
- 
+
     - name: Install SonarScanner
       run: dotnet tool install --global dotnet-sonarscanner
- 
+
     - name: Restore API
       run: dotnet restore ToDoApi/ToDoApi.csproj
 
     - name: Restore Blazor
       run: dotnet restore ToDoBlazorApp/ToDoBlazorApp.csproj
- 
+
     - name: SonarQube Begin
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -39,14 +39,14 @@ jobs:
         /o:"${{ secrets.SONAR_ORGANIZATION }}" \
         /d:sonar.host.url="https://sonarcloud.io" \
         /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
- 
+
     - name: Build API
       run: dotnet build ToDoApi/ToDoApi.csproj -c Release --no-restore
 
     - name: Build Blazor
       run: dotnet build ToDoBlazorApp/ToDoBlazorApp.csproj -c Release --no-restore
- 
+
     - name: SonarQube End
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: dotnet sonarscanner en
+      run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
