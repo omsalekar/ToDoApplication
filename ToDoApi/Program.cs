@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,21 +7,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 // --------------------
 
-// PostgreSQL for Render
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new Exception("Database connection string is missing");
+}
+
 builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddControllers();
-
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// CORS (Vercel → Render)
 builder.Services.AddCors();
 
 var app = builder.Build();
+
+// --------------------
+// Ensure DB exists (SAFE FOR FIRST DEPLOY)
+// --------------------
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // --------------------
 // Render PORT binding
@@ -33,11 +43,9 @@ app.Urls.Add($"http://*:{port}");
 // Middleware
 // --------------------
 
-// Swagger in production (OK for demo/interview)
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// CORS
 app.UseCors(policy =>
     policy.AllowAnyOrigin()
           .AllowAnyMethod()
