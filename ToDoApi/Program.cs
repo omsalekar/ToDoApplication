@@ -3,9 +3,7 @@ using ToDoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --------------------
-// Connection String
-// --------------------
+// ---- Database ----
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -13,12 +11,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new Exception("Database connection string is missing");
 }
 
-// --------------------
-// Services
-// --------------------
 builder.Services.AddDbContext<ToDoDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// ---- Services ----
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -26,24 +22,18 @@ builder.Services.AddCors();
 
 var app = builder.Build();
 
-// --------------------
-// CREATE DATABASE TABLES (IMPORTANT FIX)
-// --------------------
+// ---- Apply migrations automatically (CRITICAL) ----
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
-    db.Database.EnsureCreated();    
+    db.Database.Migrate(); // <-- THIS CREATES TABLES
 }
 
-// --------------------
-// Render PORT binding
-// --------------------
+// ---- Render Port ----
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Urls.Add($"http://*:{port}");
 
-// --------------------
-// Middleware
-// --------------------
+// ---- Middleware ----
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -52,8 +42,6 @@ app.UseCors(p =>
      .AllowAnyMethod()
      .AllowAnyHeader());
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();
