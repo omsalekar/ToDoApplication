@@ -1,34 +1,49 @@
-using MudBlazor.Services;
+﻿using MudBlazor.Services;
 using ToDoBlazorApp.Components;
- 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// --------------------
+// Services
+// --------------------
 
-
+// MudBlazor
 builder.Services.AddMudServices();
 
-
+// HttpClient for Backend API
 builder.Services.AddHttpClient("api", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7218/");
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+
+    if (string.IsNullOrWhiteSpace(apiBaseUrl))
+        throw new Exception("ApiBaseUrl environment variable is missing");
+
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
+// Razor Components (Blazor Server)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --------------------
+// Render PORT binding (CRITICAL)
+// --------------------
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://*:{port}");
+
+// --------------------
+// Middleware
+// --------------------
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//Disable HTTPS redirect on Render (already behind HTTPS proxy)
+app.UseForwardedHeaders();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
