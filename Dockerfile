@@ -1,11 +1,7 @@
 # ---------- Base runtime ----------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS base
 WORKDIR /app
 EXPOSE 8080
-
-ENV DOTNET_GC_SERVER=0
-ENV DOTNET_GC_CONCURRENT=1
-ENV DOTNET_EnableDiagnostics=0
 
 # ---------- Build ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -21,4 +17,8 @@ RUN dotnet publish ToDoApi/ToDoApi.csproj -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
 ENTRYPOINT ["dotnet", "ToDoApi.dll"]
