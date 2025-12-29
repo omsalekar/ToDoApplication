@@ -1,5 +1,6 @@
 ﻿using MudBlazor.Services;
 using ToDoBlazorApp.Components;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,14 @@ builder.Services.AddHttpClient("api", client =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// REQUIRED for Render proxy
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+});
+
 var app = builder.Build();
 
 // --------------------
@@ -36,16 +45,21 @@ app.Urls.Add($"http://*:{port}");
 // --------------------
 // Middleware
 // --------------------
+
+// MUST be first
+app.UseForwardedHeaders();
+
+// DO NOT use HTTPS redirection on Render
+// app.UseHttpsRedirection();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
-//Disable HTTPS redirect on Render (already behind HTTPS proxy)
-app.UseForwardedHeaders();
-
 app.UseStaticFiles();
+app.UseRouting();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
